@@ -6,9 +6,9 @@
   <img src="https://api.nasa.gov/images/logo.png">
 </p>
 
-# .NET Nasa API
+# Whats is this?
 Just a .NET wrapper for Nasa Open APIs. All APIs are documenteds in https://api.nasa.gov/
 Library written in C#.
 
-### Dependencies
+### Dependencies:
 Download and include the *Json.NET* to your project. https://www.newtonsoft.com/json
