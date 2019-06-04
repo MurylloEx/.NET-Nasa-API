@@ -1,10 +1,10 @@
 <p align="center">
-  <h1>.NET Nasa API</h1><br>
-  
-  <img src="https://api.nasa.gov/images/logo.png">
+  <h1 align="center">.NET Nasa API</h1><br>
 </p>
 
-hgf
+<p align="center">
+  <img src="https://api.nasa.gov/images/logo.png">
+</p>
 
 # .NET Nasa API
 Just a .NET wrapper for Nasa Open APIs. All APIs are documenteds in https://api.nasa.gov/
