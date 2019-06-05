@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">.NET Nasa API</h1><br>
+  <h1 align="center">Open .NET Nasa API</h1><br>
 </p>
 
 <p align="center">
