@@ -1558,6 +1558,7 @@ namespace Nasa
 
     }
 
+    [Obsolete("This feature is not available.", true)]
     public class NasaDonki : NasaConnection
     {
         NasaSecureHttpRequest secureConnection;
@@ -1568,10 +1569,9 @@ namespace Nasa
                         Int32 speed = 0, Int32 halfAngle = 0, string catalog = "ALL",
                         string keyword = null, string location = "ALL") : base(apiKey, secureProtocolType)
         {
-
         }
 
-    } //terminar essa classe
+    }
 
     public class NasaEarth : NasaConnection
     {
