@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Text;
 using Netasync.Http;
@@ -44,7 +44,13 @@ namespace Nasa
 
     public enum NASA_ASTEROIDS_REQUEST_TYPE : byte
     {
-
+        NEO_FEED        = 0x0001,
+        NEO_FEED_TODAY  = 0x0002,
+        NEO_SENTRY      = 0x0003,
+        NEO_SENTRY_ID   = 0x0004,
+        NEO_BROWSE      = 0x0005,
+        NEO_ASTEROID_ID = 0x0006,
+        NEO_STATS       = 0x0007
     }
 
     public struct NASA_PACKET_INFO
@@ -68,7 +74,7 @@ namespace Nasa
         //Earth LANDSET-8 Google Earth API
         public const string NASA_ADDRESS_EARTH      = "https://api.nasa.gov/planetary/earth";
         //Asteroids NeoWs (Neo Webservice)
-        public const string NASA_ADDRESS_ASTEROIDS  = "https://api.nasa.gov/neo/rest/v1/neo";
+        public const string NASA_ADDRESS_ASTEROIDS  = "https://api.nasa.gov/neo";
     }
 
     #endregion
