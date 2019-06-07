@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
@@ -664,6 +664,9 @@ namespace Nasa
         [JsonProperty("neo_reference_id")]
         public string NeoReferenceId { get; set; }
 
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
         [JsonProperty("nasa_jpl_url")]
         public string NasaJplUrl { get; set; }
 
@@ -1326,7 +1329,7 @@ namespace Nasa
             {
                 IsConnected = false;
                 secureConnection.Dispose();
-                DataBuffer = new NASA_EPIC_DATA();
+                DataBuffer = new object();
             }
         }
 
@@ -1338,21 +1341,235 @@ namespace Nasa
     {
         NasaSecureHttpRequest secureConnection;
 
-        public NasaAsteroids(string apiKey, SecurityProtocolType secureProtocolType) : base(apiKey, secureProtocolType)
+        public NasaAsteroids(string apiKey, SecurityProtocolType secureProtocolType,
+            NASA_ASTEROIDS_REQUEST_TYPE neoWsRequestType, DateTime? startDate = null,
+            DateTime? endDate = null, bool feedDetailed = true, bool isActive = true,
+            string asteroidId = null, UInt32 page = 0, UInt32 size = 50) : base(apiKey, secureProtocolType)
         {
-            secureConnection = new NasaSecureHttpRequest("https://api.nasa.gov/neo/rest/v1/neo/sentry/3266177", SecureProtocolType, SecureCookieContainer);
-            using (NasaSecureHttpRequest httpReq = secureConnection)
+            IsConnected = false;
+            RequestType = neoWsRequestType;
+            if (startDate.HasValue)
             {
-                NASA_PACKET_INFO pktInfo = httpReq.Get("is_active=true&page=1&size=50&api_key=fYElxtQHW9HqTuwL9J3Qyo3Oggz8j4T3jLVgkCLx");
-                object teste = JsonConvert.DeserializeObject<NASA_ASTEROIDS_SENTRY_OBJECT>((string)pktInfo.PacketData);
-                
+                StartDate = startDate.Value;
+            }
+            if (endDate.HasValue)
+            {
+                EndDate = endDate.Value;
+            }
+            FeedDetailed = feedDetailed;
+            IsActiveSentry = isActive;
+            AsteroidId = asteroidId;
+            Page = page;
+            Size = size;
+        }
+
+        public NASA_ASTEROIDS_REQUEST_TYPE RequestType { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public bool FeedDetailed { get; set; }
+        public bool IsActiveSentry { get; set; }
+        public string AsteroidId { get; set; }
+        public UInt32 Page { get; set; }
+        public UInt32 Size { get; set; }
+        public bool IsConnected { get; private set; }
+
+        private void QueryAddParameter(ref string queryString, string parameter, object value, object defaultValue, bool useDefaultValue)
+        {
+            if (queryString != string.Empty)
+            {
+                if (Convert.ToString(value) != Convert.ToString(defaultValue))
+                {
+                    queryString += "&" + parameter + "=" + value;
+                }
+                else
+                {
+                    if (useDefaultValue == true)
+                    {
+                        queryString += "&" + parameter + "=" + Convert.ToString(defaultValue);
+                    }
+                }
+            }
+            else
+            {
+                if (Convert.ToString(value) != Convert.ToString(defaultValue))
+                {
+                    queryString += parameter + "=" + value;
+                }
+                else
+                {
+                    if (useDefaultValue == true)
+                    {
+                        queryString += parameter + "=" + Convert.ToString(defaultValue);
+                    }
+                }
             }
         }
 
-    } //terminar essa classe
+        private string NeoWsAddress(string asteroidId = null)
+        {
+            string NeoWsAddr = NasaAddresses.NASA_ADDRESS_ASTEROIDS;
+            switch (RequestType)
+            {
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED:
+                    NeoWsAddr += "/rest/v1/feed";
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED_TODAY:
+                    NeoWsAddr += "/rest/v1/feed/today";
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY:
+                    NeoWsAddr += "/rest/v1/neo/sentry";
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY_ID:
+                    if (asteroidId != null) { NeoWsAddr += "/rest/v1/neo/sentry/"; }
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_BROWSE:
+                    NeoWsAddr += "/rest/v1/neo/browse";
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_ASTEROID_ID:
+                    if (asteroidId != null) { NeoWsAddr += "/rest/v1/neo/"; }
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_STATS:
+                    NeoWsAddr += "/rest/v1/stats";
+                    break;
+            }
+            return NeoWsAddr;
+        }
 
-    public class NasaDonki
+        private string NeoWsCall()
+        {
+            string apiCall = string.Empty;
+            switch (RequestType)
+            {
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED:
+                    if (StartDate.Ticks > 0)
+                    {
+                        QueryAddParameter(ref apiCall, "start_date", StartDate.ToString("yyyy-MM-dd"), null, false);
+                    }
+                    if (EndDate.Ticks > 0)
+                    {
+                        QueryAddParameter(ref apiCall, "start_date", EndDate.ToString("yyyy-MM-dd"), null, false);
+                    }
+                    QueryAddParameter(ref apiCall, "detailed", FeedDetailed, true, true);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED_TODAY:
+                    QueryAddParameter(ref apiCall, "detailed", FeedDetailed, true, true);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY:
+                    QueryAddParameter(ref apiCall, "is_active", IsActiveSentry, true, true);
+                    QueryAddParameter(ref apiCall, "page", Page, 0, true);
+                    QueryAddParameter(ref apiCall, "size", Size, 50, true);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY_ID:
+                    QueryAddParameter(ref apiCall, "asteroid_id", AsteroidId, null, false);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_BROWSE:
+                    QueryAddParameter(ref apiCall, "page", Page, 0, true);
+                    QueryAddParameter(ref apiCall, "size", Size, 50, true);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_ASTEROID_ID:
+                    QueryAddParameter(ref apiCall, "asteroid_id", AsteroidId, null, false);
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+                case NASA_ASTEROIDS_REQUEST_TYPE.NEO_STATS:
+                    QueryAddParameter(ref apiCall, "api_key", ApiKey, null, true);
+                    break;
+            }
+            return apiCall;
+        }
+
+        public async Task Connect()
+        {
+            if (IsConnected == false)
+            {
+                IsConnected = true;
+                secureConnection = new NasaSecureHttpRequest(NeoWsAddress(AsteroidId), SecureProtocolType, SecureCookieContainer);
+                using (NasaSecureHttpRequest nasaHttpReq = secureConnection)
+                {
+                    NASA_PACKET_INFO packetInfo = nasaHttpReq.GetAsync(NeoWsCall());
+                    if (packetInfo.PacketStatus == NASA_STATUS.NASA_REQUEST_SUCCESS || packetInfo.PacketStatus == NASA_STATUS.NASA_REQUEST_PENDING)
+                    {
+                        //Sucesso na requisição ao servidor.
+                        //Conexão assíncrona.
+
+                        switch (RequestType)
+                        {
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_FEED_DATA>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_FEED_TODAY:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_FEED_DATA>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_SENTRY_DATA>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_SENTRY_ID:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_SENTRY_OBJECT>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_BROWSE:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_BROWSE_DATA>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_ASTEROID_ID:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_FEED_NEO>(await packetInfo.PacketAsyncTask);
+                                break;
+                            case NASA_ASTEROIDS_REQUEST_TYPE.NEO_STATS:
+                                DataBuffer = await JsonConvert.DeserializeObjectAsync<NASA_ASTEROIDS_NEO_STATS>(await packetInfo.PacketAsyncTask);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        //A requisição falhou.
+                        IsConnected = false;
+                        throw new Exception("The async connection has failed with status: " + (ushort)packetInfo.PacketStatus);
+                    }
+                }
+            }
+        }
+
+        public async Task Update()
+        {
+            if (IsConnected == true)
+            {
+                IsConnected = false;
+                await Connect();
+            }
+            else
+            {
+                await Connect();
+            }
+        }
+
+        public void Close()
+        {
+            if (IsConnected == true)
+            {
+                IsConnected = false;
+                secureConnection.Dispose();
+                DataBuffer = new object();
+            }
+        }
+
+        public object DataBuffer { get; private set; }
+
+    }
+
+    public class NasaDonki : NasaConnection
     {
+        NasaSecureHttpRequest secureConnection;
+
+        public NasaDonki(string apiKey, SecurityProtocolType secureProtocolType,
+                        DateTime? startDate = null, DateTime? endDate = null,
+                        bool mostAccurateOnly = true, bool completeEntryOnly = true,
+                        Int32 speed = 0, Int32 halfAngle = 0, string catalog = "ALL",
+                        string keyword = null, string location = "ALL") : base(apiKey, secureProtocolType)
+        {
+
+        }
 
     } //terminar essa classe
 
