@@ -6,7 +6,7 @@
   <img src="https://api.nasa.gov/images/logo.png">
 </p>
 
-# Whats is this?
+# What is it?
 Just a .NET wrapper for Nasa Open APIs. All APIs are documenteds in https://api.nasa.gov/
 Library written in C#.
 
